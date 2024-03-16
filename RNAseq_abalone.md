@@ -1,4 +1,7 @@
-# This analysis was performed on study PRJNA597237 which includes two control samples (SRR_830 and SRR_833) and two heat-stressed samples (SRR_829 and SRR_832)
+# The response to heat-stress in abalone - A meta-analysis 
+
+Here, you can follow the steps we used to perform the meta-analysis. A collection of appropriate RNA-seq datasets from multiple studies was downloaded, and each dataset was analysed separately.
+
 
 ### Import meta_table of all subsets:
 
@@ -59,7 +62,8 @@ singularity run ../rsem.sif rsem-calculate-expression -p 8 --bowtie2 --no-bam-ou
 
 ## Moving to R 
 
-Note : bash commend for data downloading, QC, ref index using rsem (with Bowtie2), mapping and gene counts files using rsem (with Bowtie2) are will be added here soon (for now - this code is added as plain text at the end of this doc)
+This analysis was performed on study PRJNA597237 which includes two control samples (SRR_830 and SRR_833) and two heat-stressed samples (SRR_829 and SRR_832)
+
 
 ### Loading packages/tools
 
