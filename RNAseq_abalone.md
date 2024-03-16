@@ -1,12 +1,59 @@
----
-title: "RNAseq_subset237"
-author: "Roy Barkan"
-date: "20/07/2022"
-output: html_document
----
+## bash commends:
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+Import meta_table of all subsets:
+
+```
+metable_sra_all_new <- read.csv("C:/Users/jc748673/OneDrive - James Cook University/Desktop/metable_sra_all_new.csv")
+```
+
+# Downloading reads from diffrent studies (wget) and converting to fastq files (fastq-dump) :
+
+This code downloads the SRA data:
+
+```
+wget --input [SRA_list_from_metable]
+```
+
+This code converts SRA to fastq:
+
+```
+fastq-dump --split-files [downloaded_SRA_files]
+```
+
+# QC - fastqc and multiqc ###  (do this for each dataset) 
+
+```
+fastqc /home/jc748673/meta/PRJNA*/fastq_*/*.fastq 
+```
+```
+multiqc "path/to/the/fastqc/folder.zip" 
+```
+
+# Solving the rsem container issue (built by Ira):
+
+```
+singularity build rsem.sif docker://iracooke/rsem 
+```
+
+# generating transcript-to-gene-map.txt file and GCF_023055435.1_xgHalRufe1.0.p_mRNAonly.fna file from the H. ruf genomic files:
+
+```
+cat GCF_023055435.1_xgHalRufe1.0.p_genomic.gff | awk -F '\t' '$3=="mRNA"' | sed -E 's/.*Parent=(gene-LOC[^;]+).*transcript_id=([^;]+).*/\1 \2/' > gene_to_transcript_map.txt
+```
+```
+cat gene_to_transcript_map.txt | awk '{print $2}' | xargs samtools faidx GCF_023055435.1_xgHalRufe1.0.p_rna.fna > GCF_023055435.1_xgHalRufe1.0.p_mRNAonly.fna
+```
+
+# Reference index (transcripts) for rsem-caclulate-expression:
+
+```
+singularity run ../rsem.sif rsem-prepare-reference GCF_023055435.1_xgHalRufe1.0.p_mRNAonly.fna --transcript-to-gene-map gene_to_transcript_map.txt --bowtie2 Rufref
+```
+
+### Map and align one set of paired-end reads using rsem-calculate-expression:
+
+```
+singularity run ../rsem.sif rsem-calculate-expression -p 8 --bowtie2 --no-bam-output --paired-end "/path/for/forward/read.fastq" "/path/for/reverse/read.fastq" /home/jc748673/test/Rufref  <output file name> 
 ```
 
 ## Moving to R - this analysis was performed on study PRJNA597237 which includes two control samples (SRR_830 and SRR_833) and two heat-stressed samples (SRR_829 and SRR_832)
@@ -116,51 +163,4 @@ pheatmap(sampleDist_237_matrix, clustering_distance_rows = sampleDist_237, clust
 
 
 ```
-
-## bash commends:
-
-#Import meta_table of all subsets:
-
-metable_sra_all_new <- read.csv("C:/Users/jc748673/OneDrive - James Cook University/Desktop/metable_sra_all_new.csv")
-
-# Downloading reads from diffrent studies (wget) and converting to fastq files (fastq-dump) :
-
-module load anaconda3
-source $CONDA_PROF/conda.sh
-conda activate sra-tools-2.11.0
-
-#This code downloads the SRA data:
-
-wget --input [SRA_list_from_metable]
-
-#This code converts SRA to fastq :
-fastq-dump --split-files [downloaded_SRA_files]
-
-# QC - fastqc and multiqc ###  (do this for each dataset) 
-
-/sw/containers/fastqc-0.11.9.sif fastqc /home/jc748673/meta/PRJNA*/fastq_*/*.fastq 
-
-module load anaconda3
-source $CONDA_PROF/conda.sh
-conda activate multiqc-1.10.1
-
-multiqc "path/to/the/fastqc/folder.zip" 
-
-# Solving the rsem container issue (built by Ira):
-
-singularity build rsem.sif docker://iracooke/rsem 
-
-# generating transcript-to-gene-map.txt file and GCF_023055435.1_xgHalRufe1.0.p_mRNAonly.fna file from the H. ruf genomic files:
-
-cat GCF_023055435.1_xgHalRufe1.0.p_genomic.gff | awk -F '\t' '$3=="mRNA"' | sed -E 's/.*Parent=(gene-LOC[^;]+).*transcript_id=([^;]+).*/\1 \2/' > gene_to_transcript_map.txt
-
-cat gene_to_transcript_map.txt | awk '{print $2}' | xargs samtools faidx GCF_023055435.1_xgHalRufe1.0.p_rna.fna > GCF_023055435.1_xgHalRufe1.0.p_mRNAonly.fna
-
-# Reference index (transcripts) for rsem-caclulate-expression:
-
-singularity run ../rsem.sif rsem-prepare-reference GCF_023055435.1_xgHalRufe1.0.p_mRNAonly.fna --transcript-to-gene-map gene_to_transcript_map.txt --bowtie2 Rufref
-
-### Map and align one set of paired-end reads using rsem-calculate-expression:
-
-singularity run ../rsem.sif rsem-calculate-expression -p 8 --bowtie2 --no-bam-output --paired-end "/path/for/forward/read.fastq" "/path/for/reverse/read.fastq" /home/jc748673/test/Rufref  <output file name> 
 
