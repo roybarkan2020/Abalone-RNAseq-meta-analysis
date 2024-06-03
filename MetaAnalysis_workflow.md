@@ -30,7 +30,7 @@ This code converts SRA to fastq:
 fastq-dump --split-files [downloaded_SRA_files]
 ```
 
-### QC - fastqc and multiqc (do this for each dataset) 
+### QC - fastqc and multiqc (do this for all reads of each dataset) 
 
 ```
 fastqc "fastq_file.fastq"
@@ -46,22 +46,22 @@ multiqc "path/to/the/fastqc/folder.zip"
 ### Build your reference for mapping (in this case, the red abalone transcriptome). Generating 'transcript-to-gene-map.txt' and 'mRNAonly.fna' files from the red abalone genomic files:
 
 ```
-cat GCF_023055435.1_xgHalRufe1.0.p_genomic.gff | awk -F '\t' '$3=="mRNA"' | sed -E 's/.*Parent=(gene-LOC[^;]+).*transcript_id=([^;]+).*/\1 \2/' > gene_to_transcript_map.txt
+cat "gff_file".gff | awk -F '\t' '$3=="mRNA"' | sed -E 's/.*Parent=(gene-LOC[^;]+).*transcript_id=([^;]+).*/\1 \2/' > gene_to_transcript_map.txt
 ```
 ```
-cat gene_to_transcript_map.txt | awk '{print $2}' | xargs samtools faidx GCF_023055435.1_xgHalRufe1.0.p_rna.fna > GCF_023055435.1_xgHalRufe1.0.p_mRNAonly.fna
+cat gene_to_transcript_map.txt | awk '{print $2}' | xargs samtools faidx "rna_file".fna > mRNAonly_file.fna
 ```
 
 ### Reference index (transcripts) for rsem-caclulate-expression:
 
 ```
-singularity run ../rsem.sif rsem-prepare-reference GCF_023055435.1_xgHalRufe1.0.p_mRNAonly.fna --transcript-to-gene-map gene_to_transcript_map.txt --bowtie2 Rufref
+rsem rsem-prepare-reference mRNAonly_file.fna --transcript-to-gene-map gene_to_transcript_map.txt --bowtie2 "output_reference_file"
 ```
 
-### Map and align one set of paired-end reads using rsem-calculate-expression:
+### Map, align and get gene counts for each set of paired-end reads using rsem-calculate-expression:
 
 ```
-singularity run ../rsem.sif rsem-calculate-expression -p 8 --bowtie2 --no-bam-output --paired-end "/path/for/forward/read.fastq" "/path/for/reverse/read.fastq" /home/jc748673/test/Rufref  <output file name> 
+rsem rsem-calculate-expression -p 8 --bowtie2 --no-bam-output --paired-end "/path/for/forward/read.fastq" "/path/for/reverse/read.fastq" "/path/for/output_reference_file"  rsem_output_file_name
 ```
 
 ## Step 2 (Moving to R) 
